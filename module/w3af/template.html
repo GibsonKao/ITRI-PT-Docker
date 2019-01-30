@@ -1,0 +1,51 @@
+<div class="row">
+  <div class="col-md-1"></div>
+  <div class="col-md-5">
+    <table class="table">
+      <caption>Scan Information</caption>
+      <tr>
+        <th scope="row">Infomation</th>
+        <td>{{ infoCount }}</td>
+      </tr>
+      <tr>
+        <th scope="row">Low</th>
+        <td>{{ lowCount }}</td>
+      </tr>
+      <tr>
+        <th scope="row">Medium</th>
+        <td>{{ mediumCount }}</td>
+      </tr>
+      <tr>
+        <th scope="row">High</th>
+        <td>{{ highCount }}</td>
+      </tr>
+      <tr>
+        <th scope="row">Total</th>{{ js(options.total = options.infoCount + options.lowCount + options.mediumCount + options.highCount)/ }}
+        <td>{{ total }}</td>
+      </tr>
+    </table>
+  </div>
+  <div class="col-md-5">
+    <div id="chartContainer" style="height: 370px; width: 100%;"></div>
+    <script src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
+    <script>
+      var chart = new CanvasJS.Chart("chartContainer", {
+        animationEnabled: true,
+        data: [{
+          type: "pie",
+          startAngle: 240,
+          yValueFormatString: "##0.00\"%\"",
+          indexLabel: "{label} {y}% ",
+          dataPoints: [
+          {y: {{ avg(options.infoCount, options.total)/ }}, label: "Information", color: "#d9edf7" },
+          {y: {{ avg(options.lowCount, options.total)/ }}, label: "Low", color: "#31708f" },
+          {y: {{ avg(options.mediumCount, options.total)/ }}, label: "Medium", color: "#8a6d3b" },
+          {y: {{ avg(options.highCount, options.total)/ }}, label: "High", color: "#a94442" },
+          ]
+        }]
+      });
+      chart.render();
+    </script>
+  </div>
+  <div class="col-md-1"></div>
+</div>

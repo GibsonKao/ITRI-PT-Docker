@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Dashboard</title>
+  <!-- import CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+  <style>
+    a { color: white; }
+    .el-table .warning-row { background: oldlace; }
+    .el-table .success-row { background: #f0f9eb; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <el-container>
+      <el-header>
+          <el-menu
+            :default-active="activeIndex"
+            class="el-menu"
+            mode="horizontal"
+            @select="handleSelect"
+            background-color="#545c64"
+            text-color="#fff"
+            active-text-color="#ffd04b">
+            <el-menu-item index="1">ITRI-PT</el-menu-item>
+            <el-submenu index="2">
+              <template slot="title">Task</template>
+              <el-menu-item index="2-1" @click="addTaskFromVisible = true; addTaskFrom.scanner = 'nmap'; taskTitle = 'Add Auto-Nmap Task';">Create Auto-Nmap Task</el-menu-item>
+              <el-menu-item index="2-2" @click="addW3afFromVisible = true;">Create W3af-Gryffin Task</el-menu-item>
+              <el-menu-item index="2-3" @click="addTaskFromVisible = true; addTaskFrom.scanner = 'exploit'; taskTitle = 'Add autoExploit Task';">Create autoExploit Task</el-menu-item>
+            </el-submenu>
+            <el-submenu index="3" style="float: right;">
+              <template slot="title"><%= user.name %></template>
+              <el-menu-item index="3-1" @click="chPassFormVisible = true;">Change Password</el-menu-item>
+              <el-menu-item index="3-2"><a href="/login">Logout</a></el-menu-item>
+            </el-submenu>
+        </el-menu>
+      </el-header>
+      <el-main>
+        <el-table
+          :data="taskData"
+          style="width: 99%"
+          empty-text="No Data"
+          :row-class-name="tableRowClassName">
+          <el-table-column
+            prop="id"
+            label="Task ID"
+            width="180">
+          </el-table-column>
+          <el-table-column
+            prop="target"
+            label="Target">
+          </el-table-column>
+          <el-table-column
+            prop="scanner"
+            label="Scanner">
+          </el-table-column>
+          <el-table-column
+            prop="argv"
+            label="Arguments">
+          </el-table-column>
+          <el-table-column
+            prop="updatedAt"
+            label="Last Update">
+          </el-table-column>
+          <el-table-column
+            prop="status"
+            label="Status">
+            <template slot-scope="scope">
+              {{ scope.row.status }}
+              <el-button @click="handleClick(scope.row)" type="text" size="small" v-if="scope.row.status === 'done'">[ View ]</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </el-main>
+      <el-footer>
+      </el-footer>
+    </el-container>
+
+    <!-- Add Nmap Task Form -->
+    <el-dialog :title.sync="taskTitle" :visible.sync="addTaskFromVisible">
+      <el-form :model="addTaskFrom" ref="addTaskFrom" @keyup.enter.native="submitForm('addTaskFrom')">
+        <el-form-item label="Target" :label-width="formLabelWidth" prop="target" required>
+          <el-input v-model="addTaskFrom.target" auto-complete="off" type="text"></el-input>
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="resetForm('addTaskFrom')">Cancel</el-button>
+        <el-button type="primary" @click="submitForm('addTaskFrom')">Confirm</el-button>
+      </div>
+    </el-dialog>
+
+    <!-- Add W3af Task Form -->
+    <el-dialog title="Add W3af-Gryffin Task" :visible.sync="addW3afFromVisible">
+      <el-form :model="addW3afFrom" ref="addW3afFrom" @keyup.enter.native="submitForm('addW3afFrom')">
+        <el-form-item label="Target" :label-width="formLabelWidth" prop="target" required>
+          <el-input v-model="addW3afFrom.target" auto-complete="off" type="text"></el-input>
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="resetForm('addW3afFrom')">Cancel</el-button>
+        <el-button type="primary" @click="submitForm('addW3afFrom')">Confirm</el-button>
+      </div>
+    </el-dialog>
+
+    <!-- Change Password Form -->
+    <el-dialog title="Change Password" :visible.sync="chPassFormVisible">
+      <el-form :model="chPassForm" ref="chPassForm" :rules="chPassRules" @keyup.enter.native="submitForm('chPassForm')">
+        <el-form-item label="Old Password" :label-width="formLabelWidth" prop="op" required>
+          <el-input v-model="chPassForm.op" auto-complete="off" type="password"></el-input>
+        </el-form-item>
+        <el-form-item label="New Password" :label-width="formLabelWidth" prop="np" required>
+          <el-input v-model="chPassForm.np" auto-complete="off" type="password"></el-input>
+        </el-form-item>
+        <el-form-item label="Confirm Password" :label-width="formLabelWidth" prop="cp" required>
+          <el-input v-model="chPassForm.cp" auto-complete="off" type="password"></el-input>
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="resetForm('chPassForm')">Cancel</el-button>
+        <el-button type="primary" @click="submitForm('chPassForm')">Confirm</el-button>
+      </div>
+    </el-dialog>
+
+    <!-- Show RawData Form -->
+    <el-dialog title="Raw Data"
+      :visible.sync="showDataFormVisible">
+      <span>{{ rawData }}</span>
+    </el-dialog>
+
+  </div>
+  <!-- import JavaScript -->
+  <script src="https://unpkg.com/vue/dist/vue.js"></script>
+  <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+  <!-- vue main -->
+  <script>
+    new Vue({
+      el: '#app',
+      data: function() {
+        var checkPass = (rule, value, callback) => {
+          if (value === '') {
+            callback(new Error('Please input the password'));
+          }
+          else {
+            callback();
+          }
+        };
+        var validatePass = (rule, value, callback) => {
+          if (value === '') {
+            callback(new Error('Please input new password'));
+          } else {
+            callback();
+          }
+        };
+        var confirmPass = (rule, value, callback) => {
+          if (value === '') {
+            callback(new Error('Please input the password again'));
+          } else if (value !== this.chPassForm.np) {
+            callback(new Error('Two inputs don\'t match!'));
+          } else {
+            callback();
+          }
+        };
+        return {
+          activeIndex: '1',
+          formLabelWidth: '160px',
+          taskTitle: '',
+          addTaskFromVisible: false,
+          addTaskFrom: {
+            target: '',
+            scanner: 'nmap',
+            argv: '',
+            status: 'start'
+          },
+          addW3afFromVisible: false,
+          addW3afFrom: {
+            target: '',
+            scanner: 'w3af',
+            argv: '',
+            status: 'start'
+          },
+          chPassFormVisible: false,
+          chPassForm: {
+            op: '',
+            np: '',
+            cp: ''
+          },
+          chPassRules: {
+            op: [
+              { validator: checkPass, trigger: 'blur' }
+            ],
+            np: [
+              { validator: validatePass, trigger: 'blur' }
+            ],
+            cp: [
+              { validator: confirmPass, trigger: 'blur' }
+            ]
+          },
+          taskData: [],
+          showDataFormVisible: false,
+          rawData: ''
+        };
+      },
+      methods: {
+        submitForm(formName) {
+          this.$refs[formName].validate((valid) => {
+            if (valid) {
+              // alert('submit!');
+              switch(formName) {
+                case 'chPassForm':
+                  fetch('/chpass', {
+                    method: 'PUT',
+                    credentials: 'same-origin',
+                    headers: new Headers({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify(this.chPassForm)
+                  })
+                  .then(res => res.json())
+                  .then(json => {
+                    if (json.status !== 'ok') {
+                      throw new Error(json.msg)
+                    }
+                    else {
+                      location.assign('/login')
+                    }
+                  })
+                  .catch(err => {
+                    this.$message.error(`Oops, ${err.message}`);
+                  });
+                  break;
+                case 'addTaskFrom':
+                  fetch('/task', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: new Headers({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify(this.addTaskFrom)
+                  })
+                  .then(res => res.json())
+                  .then(json => {
+                    if (json.status === 'ok') {
+                      this.loadTask();
+                    }
+                    else {
+                      throw new Error(json.msg)
+                    }
+                  })
+                  .catch(err => {
+                    this.$message.error(`Oops, ${err.message}`);
+                  });
+                  break;
+                case 'addW3afFrom':
+                  fetch('/task', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: new Headers({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify(this.addW3afFrom)
+                  })
+                  .then(res => res.json())
+                  .then(json => {
+                    if (json.status === 'ok') {
+                      this.loadTask();
+                    }
+                    else {
+                      throw new Error(json.msg)
+                    }
+                  })
+                  .catch(err => {
+                    this.$message.error(`Oops, ${err.message}`);
+                  });
+                  break;
+                default:
+                  this.$refs[formName].$el.submit();
+              }
+            } else {
+              console.log('error submit!!');
+              return false;
+            }
+          });
+        },
+        resetForm(formName) {
+          this.$refs[formName].resetFields();
+        },
+        handleSizeChange(val) {
+          console.log(`${val} items per page`);
+        },
+        handleCurrentChange(val) {
+          // this.loadTask(val);
+          console.log(`current page: ${val}`);
+        },
+        handleClick(row) {
+          this.rawData = row.rawdata.toString();
+          this.showDataFormVisible = true;
+        },
+        handleSelect(key, keyPath) {
+          console.log(key, keyPath);
+        },
+        tableRowClassName({row, rowIndex}) {
+          if (row.status === 'pending') {
+            return 'warning-row';
+          } else if (row.status === 'done') {
+            return 'success-row';
+          }
+          return '';
+        },
+        loadTask(val) {
+          fetch(`/task`, {
+            credentials: 'same-origin',
+            headers: new Headers({ 'Content-Type': 'application/json' }),
+          })
+          .then(res => {
+            if (res.redirected) location.assign('/login')
+            return res.json()
+          })
+          .then(json => {
+            this.taskData = json.rows;
+            this.total = json.count;
+          });
+        }
+      },
+      mounted() {
+        this.loadTask();
+      }
+    });
+    <% if (locals.err) { %> app.__vue__.$message.error('Oops, <%= err %>'); <% } %>
+  </script>
+</body>
+</html>
