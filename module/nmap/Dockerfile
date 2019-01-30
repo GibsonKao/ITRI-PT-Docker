@@ -7,4 +7,4 @@ RUN pip install --no-cache-dir python-nmap
 
 COPY ./Auto-NMAP-Script-Scanning-Tool .
 
-CMD [ "python", "main.py", "127.0.0.1" ]
+CMD [ "python", "AutoNMAP.py", "127.0.0.1" ]
