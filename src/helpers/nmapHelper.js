@@ -16,13 +16,13 @@ module.exports = class Nmap {
     console.log('starting container')
     docker.createContainer({
       Image: 'auto-nmap',
-      Cmd: [ 'python', 'main.py', this._target ],
+      Cmd: [ 'python', 'AutoNMAP.py', this._target ],
       Tty: true
     }).then(container => {
       console.log('create container')
       container.attach({ stream: true, stdout: true, stderr: true })
         .then(stream => {
-          this._filename = `output/${this._target}-${new Date().getTime()}.txt`
+          this._filename = `output/${this._target}-${new Date().getTime()}.xml`
           console.log('scanning..')
           getStream(stream)
             .then(str => {
